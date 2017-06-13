@@ -762,6 +762,7 @@ int f2fs_submit_page_bio(struct f2fs_io_info *fio)
 		wbc_account_io(fio->io_wbc, page, PAGE_SIZE);
 
 	__attach_io_flag(fio);
+	fio->op_flags |= fio->encrypted_page ? REQ_NOENCRYPT : 0;
 	bio_set_op_attrs(bio, fio->op, fio->op_flags);
 
 	inc_page_count(fio->sbi, is_read_io(fio->op) ?
@@ -1008,6 +1009,7 @@ next:
 		bio_page = fio->compressed_page;
 	else
 		bio_page = fio->page;
+	fio->op_flags |= fio->encrypted_page ? REQ_NOENCRYPT : 0;
 
 	/* set submitted = true as a return value */
 	fio->submitted = true;
@@ -1098,6 +1100,10 @@ static struct bio *f2fs_grab_read_bio(struct inode *inode, block_t blkaddr,
 		ctx->sbi = sbi;
 		ctx->enabled_steps = post_read_steps;
 		bio->bi_private = ctx;
+		bio_set_op_attrs(bio, REQ_OP_READ,
+			(f2fs_encrypted_inode(inode) ?
+			 REQ_NOENCRYPT :
+			 0));
 	}
 
 	return bio;
