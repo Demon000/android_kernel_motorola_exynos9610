@@ -4107,6 +4107,21 @@ static int ufshcd_get_max_pwr_mode(struct ufs_hba *hba)
 				__func__,
 				pwr_info->lane_rx,
 				pwr_info->lane_tx);
+
+	hba->tcx_replay_timer_expired_cnt = 0;
+	hba->fcx_protection_timer_expired_cnt = 0;
+
+	/* Get the peer available lane count */
+	ufshcd_dme_peer_get(hba, UIC_ARG_MIB(PA_AVAILRXDATALANES),
+			&pwr_info->peer_available_lane_rx);
+	ufshcd_dme_peer_get(hba, UIC_ARG_MIB(PA_AVAILTXDATALANES),
+			&pwr_info->peer_available_lane_tx);
+
+	if (!pwr_info->peer_available_lane_rx || !pwr_info->peer_available_lane_tx) {
+		dev_err(hba->dev, "%s: invalid peer available lanes value. rx=%d, tx=%d\n",
+				__func__,
+				pwr_info->peer_available_lane_rx,
+				pwr_info->peer_available_lane_tx);
 		return -EINVAL;
 	}
 
@@ -6781,6 +6796,7 @@ static void ufshcd_def_desc_sizes(struct ufs_hba *hba)
 static int ufshcd_probe_hba(struct ufs_hba *hba)
 {
 	struct ufs_dev_desc card = {0};
+	struct ufs_pa_layer_attr *pwr_info = &hba->max_pwr_info.info;
 	int re_cnt = 0;
 	int ret;
 	ktime_t start = ktime_get();
@@ -6843,6 +6859,14 @@ retry:
 			"%s: Failed getting max supported power mode\n",
 			__func__);
 	} else {
+		if ((pwr_info->lane_rx != pwr_info->peer_available_lane_rx)
+			|| (pwr_info->lane_tx != pwr_info->peer_available_lane_tx)) {
+			dev_err(hba->dev,
+				"%s: peer availabele lanes are not equal to connected lanes\n",
+				__func__);
+			ret = -EINVAL;
+			goto out;
+		}
 		ret = ufshcd_config_pwr_mode(hba, &hba->max_pwr_info.info);
 		if (ret) {
 			dev_err(hba->dev, "%s: Failed setting power mode, err = %d\n",
