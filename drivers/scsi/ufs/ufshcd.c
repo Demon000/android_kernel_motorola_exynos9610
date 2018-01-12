@@ -2055,6 +2055,7 @@ static int ufshcd_map_sg(struct ufs_hba *hba, struct ufshcd_lrb *lrbp)
 			prd->upper_addr =
 				cpu_to_le32(upper_32_bits(sg->dma_address));
 			prd->reserved = 0;
+			hba->transferred_sector += prd->size;
 			prd = (void *)prd + hba->sg_entry_size;
 		}
 	} else {
