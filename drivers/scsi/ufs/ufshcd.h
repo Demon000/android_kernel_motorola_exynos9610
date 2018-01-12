@@ -350,6 +350,7 @@ struct ufs_hba_variant_ops {
 	int     (*suspend)(struct ufs_hba *, enum ufs_pm_op);
 	int     (*resume)(struct ufs_hba *, enum ufs_pm_op);
 	void	(*dbg_register_dump)(struct ufs_hba *hba);
+	u8      (*get_unipro_result)(struct ufs_hba *hba, int num);
 	int	(*phy_initialization)(struct ufs_hba *);
 	int	(*program_key)(struct ufs_hba *hba,
 			       const union ufs_crypto_cfg_entry *cfg, int slot);
@@ -673,6 +674,8 @@ struct ufs_hba {
 	#define UFSHCD_QUIRK_USE_OF_HCE				UFS_BIT(8)
 
 	#define UFSHCI_QUIRK_SKIP_INTR_AGGR			UFS_BIT(10)
+
+	#define UFSHCD_QUIRK_GET_GENERRCODE_DIRECT		UFS_BIT(12)
 
 	unsigned int quirks;	/* Deviations from standard UFSHCI spec. */
 
@@ -1105,5 +1108,11 @@ static inline void ufshcd_vops_dbg_register_dump(struct ufs_hba *hba)
 		hba->vops->dbg_register_dump(hba);
 }
 
+static inline u8 ufshcd_vops_get_unipro(struct ufs_hba *hba, int num)
+{
+	if (hba->vops && hba->vops->get_unipro_result)
+		return hba->vops->get_unipro_result(hba, num);
+	return 0;
+}
 int ufshcd_read_health_desc(struct ufs_hba *hba, u8 *buf, u32 size);
 #endif /* End of Header */
