@@ -2969,7 +2969,7 @@ static int __ufshcd_query_descriptor(struct ufs_hba *hba,
 {
 	struct ufs_query_req *request = NULL;
 	struct ufs_query_res *response = NULL;
-	int err;
+	int err = 0;
 
 	BUG_ON(!hba);
 
@@ -6697,6 +6697,8 @@ retry:
 	if (ret)
 		goto out;
 
+	dev_info(hba->dev, "UFS link established\n");
+
 	/* set the default level for urgent bkops */
 	hba->urgent_bkops_lvl = BKOPS_STATUS_PERF_IMPACT;
 	hba->is_urgent_bkops_lvl_checked = false;
@@ -6749,6 +6751,12 @@ retry:
 					__func__, ret);
 			goto out;
 		}
+
+		if (hba->max_pwr_info.info.pwr_rx == FAST_MODE ||
+			hba->max_pwr_info.info.pwr_tx == FAST_MODE ||
+			hba->max_pwr_info.info.pwr_rx == FASTAUTO_MODE ||
+			hba->max_pwr_info.info.pwr_tx == FASTAUTO_MODE)
+			dev_info(hba->dev, "HS mode configured\n");
 	}
 
 	/* set the state as operational after switching to desired gear */
