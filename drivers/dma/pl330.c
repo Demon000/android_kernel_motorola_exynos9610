@@ -29,7 +29,9 @@
 #include <linux/pm_runtime.h>
 
 #include "dmaengine.h"
+#ifdef CONFIG_EXYNOS_PD
 #include <soc/samsung/exynos-pm.h>
+#endif
 
 #define PL330_MAX_CHAN		8
 #define PL330_MAX_IRQS		32
@@ -756,6 +758,18 @@ static inline int _emit_MOV(unsigned dry_run, u8 buf[],
 		dst == SAR ? "SAR" : (dst == DAR ? "DAR" : "CCR"), val);
 
 	return SZ_DMAMOV;
+}
+
+static inline u32 _emit_NOP(unsigned dry_run, u8 buf[])
+{
+	if (dry_run)
+		return SZ_DMANOP;
+
+	buf[0] = CMD_DMANOP;
+
+	PL330_DBGCMD_DUMP(SZ_DMANOP, "\tDMANOP\n");
+
+	return SZ_DMANOP;
 }
 
 static inline u32 _emit_RMB(unsigned dry_run, u8 buf[])
@@ -2969,6 +2983,7 @@ int pl330_dma_debug(struct dma_chan *chan)
 	struct dma_pl330_chan *pch = to_pchan(chan);
 	void __iomem *regs;
 	struct pl330_thread *thrd;
+	unsigned idx;
 
 	if (unlikely(!pch))
 		return -EINVAL;
@@ -3025,7 +3040,6 @@ int pl330_dma_getposition(struct dma_chan *chan,
 	struct dma_pl330_chan *pch = to_pchan(chan);
 	void __iomem *regs;
 	struct pl330_thread *thrd;
-	int idx;
 
 	if (unlikely(!pch))
 		return -EINVAL;
@@ -3291,6 +3305,7 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
 	pl330->lpa_nb.priority = 0;
 
 	ret = exynos_pm_register_notifier(&pl330->lpa_nb);
+
 	if (ret) {
 		dev_err(&adev->dev, "failed to register pm notifier\n");
 		goto probe_err3;
