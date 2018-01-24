@@ -129,6 +129,14 @@ static inline bool bio_full(struct bio *bio)
 	return bio->bi_vcnt >= bio->bi_max_vecs;
 }
 
+static inline bool bio_has_crypt(struct bio *bio)
+{
+	if (bio && (bio->bi_opf & REQ_CRYPT))
+		return true;
+	else
+		return false;
+}
+
 /*
  * will die
  */
