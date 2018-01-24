@@ -352,6 +352,10 @@ struct ufs_hba_variant_ops {
 	int	(*phy_initialization)(struct ufs_hba *);
 	int	(*program_key)(struct ufs_hba *hba,
 			       const union ufs_crypto_cfg_entry *cfg, int slot);
+	int	(*crypto_engine_cfg)(struct ufs_hba *, struct ufshcd_lrb *,
+					struct scatterlist *, int, int);
+	int	(*crypto_engine_clear)(struct ufs_hba *, struct ufshcd_lrb *);
+	int	(*access_control_abort)(struct ufs_hba *);
 };
 
 struct keyslot_mgmt_ll_ops;
@@ -1106,4 +1110,29 @@ static inline u8 ufshcd_vops_get_unipro(struct ufs_hba *hba, int num)
 	return 0;
 }
 int ufshcd_read_health_desc(struct ufs_hba *hba, u8 *buf, u32 size);
+static inline int ufshcd_vops_crypto_engine_cfg(struct ufs_hba *hba,
+					struct ufshcd_lrb *lrbp,
+					struct scatterlist *sg, int index,
+					int sector_offset)
+{
+	if (hba->vops && hba->vops->crypto_engine_cfg)
+		return hba->vops->crypto_engine_cfg(hba, lrbp, sg, index,
+						sector_offset);
+	return 0;
+}
+
+static inline int ufshcd_vops_crypto_engine_clear(struct ufs_hba *hba,
+					struct ufshcd_lrb *lrbp)
+{
+	if (hba->vops && hba->vops->crypto_engine_clear)
+		return hba->vops->crypto_engine_clear(hba, lrbp);
+	return 0;
+}
+
+static inline int ufshcd_vops_access_control_abort(struct ufs_hba *hba)
+{
+	if (hba->vops && hba->vops->access_control_abort)
+		return hba->vops->access_control_abort(hba);
+	return 0;
+}
 #endif /* End of Header */
