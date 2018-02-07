@@ -20,7 +20,7 @@ arm64-obj-y		:= debug-monitors.o entry.o irq.o fpsimd.o		\
 			   hyp-stub.o psci.o cpu_ops.o insn.o	\
 			   return_address.o cpuinfo.o cpu_errata.o		\
 			   cpufeature.o alternative.o cacheinfo.o		\
-			   smp.o smp_spin_table.o topology.o smccc-call.o
+			   smp.o smp_spin_table.o smccc-call.o
 
 extra-$(CONFIG_EFI)			:= efi-entry.o
 
@@ -57,6 +57,10 @@ arm64-reloc-test-y := reloc_test_core.o reloc_test_syms.o
 arm64-obj-$(CONFIG_CRASH_DUMP)		+= crash_dump.o
 arm64-obj-$(CONFIG_ARM64_SSBD)		+= ssbd.o
 arm64-obj-$(CONFIG_SHADOW_CALL_STACK)	+= scs.o
+
+ifndef CONFIG_ARCH_EXYNOS
+arm64-obj-y					+= topology.o
+endif
 
 ifeq ($(CONFIG_KVM),y)
 arm64-obj-$(CONFIG_HARDEN_BRANCH_PREDICTOR)	+= bpi.o
