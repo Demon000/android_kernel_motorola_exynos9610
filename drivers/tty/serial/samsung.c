@@ -1566,6 +1566,8 @@ static int s3c24xx_serial_notifier(struct notifier_block *self,
 			if (ourport->rts_control)
 				change_uart_gpio(RTS_PINCTRL, ourport);
 		}
+
+		s3c24xx_serial_fifo_wait();
 		break;
 
 	case SICD_EXIT:
