@@ -347,6 +347,11 @@ void ext4_io_submit(struct ext4_io_submit *io)
 				  REQ_SYNC : 0;
 		io->io_bio->bi_write_hint = io->io_end->inode->i_write_hint;
 		bio_set_op_attrs(io->io_bio, REQ_OP_WRITE, io_op_flags);
+		if (IS_ENCRYPTED(io->io_end->inode) &&
+		    S_ISREG(io->io_end->inode->i_mode)) {
+			fscrypt_set_bio(io->io_end->inode, io->io_bio);
+			crypto_diskcipher_debug(FS_PAGEIO, io->io_bio->bi_opf);
+		}
 		submit_bio(io->io_bio);
 	}
 	io->io_bio = NULL;
@@ -475,7 +480,8 @@ int ext4_bio_write_page(struct ext4_io_submit *io,
 
 	bh = head = page_buffers(page);
 
-	if (fscrypt_inode_uses_fs_layer_crypto(inode) && nr_to_submit) {
+	if (fscrypt_inode_uses_fs_layer_crypto(inode) && nr_to_submit &&
+	    !fscrypt_disk_encrypted(inode)) {
 		gfp_t gfp_flags = GFP_NOFS;
 
 		/*

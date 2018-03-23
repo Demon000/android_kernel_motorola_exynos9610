@@ -177,6 +177,9 @@ struct fscrypt_symlink_data {
  */
 struct fscrypt_prepared_key {
 	struct crypto_skcipher *tfm;
+#ifdef CONFIG_CRYPTO_DISKCIPHER
+	struct crypto_diskcipher *dtfm;
+#endif
 #ifdef CONFIG_FS_ENCRYPTION_INLINE_CRYPT
 	struct fscrypt_blk_crypto_key *blk_key;
 #endif
@@ -619,5 +622,16 @@ bool fscrypt_supported_policy(const union fscrypt_policy *policy_u,
 int fscrypt_policy_from_context(union fscrypt_policy *policy_u,
 				const union fscrypt_context *ctx_u,
 				int ctx_size);
+
+static inline bool fscrypt_disk_encrypted(const struct inode *inode)
+{
+#if IS_ENABLED(CONFIG_FS_ENCRYPTION)
+#if IS_ENABLED(CONFIG_CRYPTO_DISKCIPHER)
+	if (inode && inode->i_crypt_info)
+		return inode->i_crypt_info->ci_key.dtfm != NULL;
+#endif
+#endif
+	return 0;
+}
 
 #endif /* _FSCRYPT_PRIVATE_H */

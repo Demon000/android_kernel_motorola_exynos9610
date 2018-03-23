@@ -144,6 +144,10 @@ static void bio_post_read_processing(struct bio_post_read_ctx *ctx)
 
 static bool bio_post_read_required(struct bio *bio)
 {
+	/* REQ_CRYPT is used for diskcipher */
+	if (bio->bi_opf & REQ_CRYPT)
+		return false;
+
 	return bio->bi_private && !bio->bi_status;
 }
 
@@ -419,6 +423,10 @@ int ext4_mpage_readpages(struct address_space *mapping,
 			bio->bi_private = ctx;
 			bio_set_op_attrs(bio, REQ_OP_READ,
 						is_readahead ? REQ_RAHEAD : 0);
+			if (IS_ENCRYPTED(inode) && S_ISREG(inode->i_mode)) {
+				fscrypt_set_bio(inode, bio);
+				crypto_diskcipher_debug(FS_READP, bio->bi_opf);
+			}
 		}
 
 		length = first_hole << blkbits;

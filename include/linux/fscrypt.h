@@ -211,6 +211,8 @@ u64 fscrypt_fname_siphash(const struct inode *dir, const struct qstr *name);
 void fscrypt_decrypt_bio(struct bio *bio);
 int fscrypt_zeroout_range(const struct inode *inode, pgoff_t lblk,
 			  sector_t pblk, unsigned int len);
+void fscrypt_set_bio(const struct inode *inode, struct bio *bio);
+void *fscrypt_get_diskcipher(const struct inode *inode);
 
 /* hooks.c */
 int fscrypt_file_open(struct inode *inode, struct file *filp);
@@ -479,6 +481,16 @@ static inline int fscrypt_zeroout_range(const struct inode *inode, pgoff_t lblk,
 					sector_t pblk, unsigned int len)
 {
 	return -EOPNOTSUPP;
+}
+
+static inline void fscrypt_set_bio(const struct inode *inode, struct bio *bio)
+{
+	return;
+}
+
+static inline void *fscrypt_get_diskcipher(const struct inode *inode)
+{
+	return NULL;
 }
 
 /* hooks.c */

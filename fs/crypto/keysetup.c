@@ -112,6 +112,34 @@ err_free_tfm:
 	return ERR_PTR(err);
 }
 
+static struct crypto_diskcipher *
+fscrypt_allocate_diskcipher(struct fscrypt_mode *mode, const u8 *raw_key,
+			  const struct inode *inode)
+{
+	struct crypto_diskcipher *dtfm;
+	int err;
+
+	if (!S_ISREG(inode->i_mode))
+		return NULL;
+
+	dtfm = crypto_alloc_diskcipher(mode->cipher_str, 0, 0);
+	if (IS_ERR_OR_NULL(dtfm)) {
+		fscrypt_err(inode, "Error allocating '%s' transform: %ld",
+			    mode->cipher_str, PTR_ERR(dtfm));
+		return dtfm;
+	}
+
+	err = crypto_diskcipher_setkey(dtfm, raw_key, mode->keysize, 0);
+	if (err)
+		goto err_free_dtfm;
+
+	return dtfm;
+
+err_free_dtfm:
+	crypto_free_diskcipher(dtfm);
+	return ERR_PTR(err);
+}
+
 /*
  * Prepare the crypto transform object or blk-crypto key in @prep_key, given the
  * raw key, encryption mode, and flag indicating which encryption implementation
@@ -121,6 +149,7 @@ int fscrypt_prepare_key(struct fscrypt_prepared_key *prep_key,
 			const u8 *raw_key, unsigned int raw_key_size,
 			bool is_hw_wrapped, const struct fscrypt_info *ci)
 {
+	struct crypto_diskcipher *dtfm;
 	struct crypto_skcipher *tfm;
 
 	if (fscrypt_using_inline_encryption(ci))
@@ -130,6 +159,15 @@ int fscrypt_prepare_key(struct fscrypt_prepared_key *prep_key,
 	if (WARN_ON(is_hw_wrapped || raw_key_size != ci->ci_mode->keysize))
 		return -EINVAL;
 
+	dtfm = fscrypt_allocate_diskcipher(ci->ci_mode, raw_key, ci->ci_inode);
+	if (IS_ERR_OR_NULL(dtfm))
+		goto try_skcipher;
+
+	smp_store_release(&prep_key->dtfm, dtfm);
+
+	return 0;
+
+try_skcipher:
 	tfm = fscrypt_allocate_skcipher(ci->ci_mode, raw_key, ci->ci_inode);
 	if (IS_ERR(tfm))
 		return PTR_ERR(tfm);
@@ -144,6 +182,10 @@ int fscrypt_prepare_key(struct fscrypt_prepared_key *prep_key,
 /* Destroy a crypto transform object and/or blk-crypto key. */
 void fscrypt_destroy_prepared_key(struct fscrypt_prepared_key *prep_key)
 {
+#if defined(CONFIG_CRYPTO_DISKCIPHER)
+	if (prep_key->dtfm)
+		crypto_free_req_diskcipher(prep_key->dtfm);
+#endif
 	crypto_free_skcipher(prep_key->tfm);
 	fscrypt_destroy_inline_crypt_key(prep_key);
 }

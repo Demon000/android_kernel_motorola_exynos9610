@@ -189,6 +189,11 @@ struct page *fscrypt_encrypt_pagecache_blocks(struct page *page,
 	if (WARN_ON_ONCE(len <= 0 || !IS_ALIGNED(len | offs, blocksize)))
 		return ERR_PTR(-EINVAL);
 
+#ifdef CONFIG_CRYPTO_DISKCIPHER_DEBUG
+	if (fscrypt_disk_encrypted(inode))
+		crypto_diskcipher_debug(FS_ENC_WARN, 0);
+#endif
+
 	ciphertext_page = fscrypt_alloc_bounce_page(gfp_flags);
 	if (!ciphertext_page)
 		return ERR_PTR(-ENOMEM);
@@ -267,6 +272,11 @@ int fscrypt_decrypt_pagecache_blocks(struct page *page, unsigned int len,
 
 	if (WARN_ON_ONCE(len <= 0 || !IS_ALIGNED(len | offs, blocksize)))
 		return -EINVAL;
+
+#ifdef CONFIG_CRYPTO_DISKCIPHER_DEBUG
+	if (fscrypt_disk_encrypted(inode))
+		crypto_diskcipher_debug(FS_DEC_WARN, 0);
+#endif
 
 	for (i = offs; i < offs + len; i += blocksize, lblk_num++) {
 		err = fscrypt_crypt_block(inode, FS_DECRYPT, lblk_num, page,

@@ -133,6 +133,9 @@ int fscrypt_zeroout_range(const struct inode *inode, pgoff_t lblk,
 	nr_pages = min_t(unsigned int, ARRAY_SIZE(pages),
 			 (len + blocks_per_page - 1) >> blocks_per_page_bits);
 
+	if (fscrypt_disk_encrypted(inode))
+		nr_pages = 1;
+
 	/*
 	 * We need at least one page for ciphertext.  Allocate the first one
 	 * from a mempool, with __GFP_DIRECT_RECLAIM set so that it can't fail.
@@ -145,6 +148,9 @@ int fscrypt_zeroout_range(const struct inode *inode, pgoff_t lblk,
 						     GFP_NOWAIT | __GFP_NOWARN);
 		if (!pages[i])
 			break;
+
+		memset(page_address(pages[i]), 0, PAGE_SIZE);
+		pages[i]->mapping = inode->i_mapping;
 	}
 	nr_pages = i;
 	if (WARN_ON(nr_pages <= 0))
@@ -161,11 +167,16 @@ int fscrypt_zeroout_range(const struct inode *inode, pgoff_t lblk,
 		i = 0;
 		offset = 0;
 		do {
+			if (fscrypt_disk_encrypted(inode))
+				goto skip_crypt_block;
+
 			err = fscrypt_crypt_block(inode, FS_ENCRYPT, lblk,
 						  ZERO_PAGE(0), pages[i],
 						  blocksize, offset, GFP_NOFS);
 			if (err)
 				goto out;
+
+skip_crypt_block:
 			lblk++;
 			pblk++;
 			len--;
@@ -179,7 +190,8 @@ int fscrypt_zeroout_range(const struct inode *inode, pgoff_t lblk,
 				offset = 0;
 			}
 		} while (i != nr_pages && len != 0);
-
+		fscrypt_set_bio(inode, bio);
+		crypto_diskcipher_debug(FS_ZEROPAGE, bio->bi_opf);
 		err = submit_bio_wait(bio);
 		if (err)
 			goto out;
@@ -193,3 +205,22 @@ out:
 	return err;
 }
 EXPORT_SYMBOL(fscrypt_zeroout_range);
+
+void fscrypt_set_bio(const struct inode *inode, struct bio *bio)
+{
+#ifdef CONFIG_CRYPTO_DISKCIPHER
+	if (fscrypt_disk_encrypted(inode))
+		crypto_diskcipher_set(bio, inode->i_crypt_info->ci_key.dtfm);
+#else
+	return;
+#endif
+}
+
+void *fscrypt_get_diskcipher(const struct inode *inode)
+{
+#ifdef CONFIG_CRYPTO_DISKCIPHER
+	if (fscrypt_has_encryption_key(inode))
+		return inode->i_crypt_info->ci_key.dtfm;
+#endif
+       return NULL;
+}

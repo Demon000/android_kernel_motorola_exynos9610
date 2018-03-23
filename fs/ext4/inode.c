@@ -1232,9 +1232,17 @@ static int ext4_block_write_begin(struct page *page, loff_t pos, unsigned len,
 		if (!buffer_uptodate(bh) && !buffer_delay(bh) &&
 		    !buffer_unwritten(bh) &&
 		    (block_start < from || block_end > to)) {
-			ll_rw_block(REQ_OP_READ, 0, 1, &bh);
+			int bi_opf = 0;
+			if (S_ISREG(inode->i_mode) && IS_ENCRYPTED(inode) &&
+			    fscrypt_has_encryption_key(inode)) {
+				bh->b_private = fscrypt_get_diskcipher(inode);
+				if (bh->b_private)
+					bi_opf = REQ_CRYPT | REQ_AUX_PRIV;
+			}
+			ll_rw_block(REQ_OP_READ, bi_opf, 1, &bh);
 			*wait_bh++ = bh;
-			decrypt = fscrypt_inode_uses_fs_layer_crypto(inode);
+			decrypt = fscrypt_inode_uses_fs_layer_crypto(inode) &&
+				  !bh->b_private;
 		}
 	}
 	/*
@@ -3898,6 +3906,10 @@ static ssize_t ext4_direct_IO(struct kiocb *iocb, struct iov_iter *iter)
 	ssize_t ret;
 	int rw = iov_iter_rw(iter);
 
+	if (IS_ENCRYPTED(inode) && S_ISREG(inode->i_mode) &&
+	    !fscrypt_disk_encrypted(inode))
+		return 0;
+
 	if (!fscrypt_dio_supported(iocb, iter))
 		return 0;
 
@@ -4103,7 +4115,15 @@ static int __ext4_block_zero_page_range(handle_t *handle,
 
 	if (!buffer_uptodate(bh)) {
 		err = -EIO;
-		ll_rw_block(REQ_OP_READ, 0, 1, &bh);
+		if (S_ISREG(inode->i_mode) && IS_ENCRYPTED(inode) &&
+		    fscrypt_has_encryption_key(inode))
+			bh->b_private = fscrypt_get_diskcipher(inode);
+
+		if (bh->b_private)
+			ll_rw_block(REQ_OP_READ, REQ_CRYPT, 1, &bh);
+		else
+			ll_rw_block(REQ_OP_READ, 0, 1, &bh);
+
 		wait_on_buffer(bh);
 		/* Uhhuh. Read error. Complain and punt. */
 		if (!buffer_uptodate(bh))
@@ -4112,8 +4132,10 @@ static int __ext4_block_zero_page_range(handle_t *handle,
 			/* We expect the key to be set. */
 			BUG_ON(!fscrypt_has_encryption_key(inode));
 			BUG_ON(blocksize != PAGE_SIZE);
-			WARN_ON_ONCE(fscrypt_decrypt_pagecache_blocks(
-						page, PAGE_SIZE, 0));
+
+			if (!bh->b_private)
+				WARN_ON_ONCE(fscrypt_decrypt_pagecache_blocks(
+							page, PAGE_SIZE, 0));
 		}
 	}
 	if (ext4_should_journal_data(inode)) {
