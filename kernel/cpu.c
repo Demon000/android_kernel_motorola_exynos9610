@@ -1076,6 +1076,14 @@ static int __ref _cpus_down(struct cpumask cpus, int tasks_frozen,
 	}
 
 	for_each_cpu(cpu, &ap_work_cpus) {
+		struct cpuhp_cpu_state *st = per_cpu_ptr(&cpuhp_state, cpu);
+		set_cpu_active(cpu, false);
+		st->state = CPUHP_AP_EXYNOS_IDLE_CTRL;
+	}
+
+	cpuset_update_active_cpus();
+
+	for_each_cpu(cpu, &ap_work_cpus) {
 		st = per_cpu_ptr(&cpuhp_state, cpu);
 		set_cpu_active(cpu, false);
 		st->state = CPUHP_AP_EXYNOS_IDLE_CTRL;
