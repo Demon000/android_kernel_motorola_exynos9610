@@ -133,6 +133,10 @@ struct binder_transaction_log_entry {
 	uint32_t return_error;
 	uint32_t return_error_param;
 	const char *context_name;
+	const char *from_proc_name;
+	const char *from_thread_name;
+	const char *to_proc_name;
+	const char *to_thread_name;
 };
 
 struct binder_transaction_log {
