@@ -187,3 +187,4 @@ obj-$(CONFIG_TEE)		+= tee/
 obj-$(CONFIG_MULTIPLEXER)	+= mux/
 obj-$(CONFIG_GNSS)		+= gnss/
 obj-$(CONFIG_EXYNOS_BTS)	+= bts/
+obj-$(CONFIG_TRUSTONIC_TEE)     += gud/
