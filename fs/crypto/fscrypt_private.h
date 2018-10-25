@@ -628,7 +628,7 @@ static inline bool fscrypt_disk_encrypted(const struct inode *inode)
 #if IS_ENABLED(CONFIG_FS_ENCRYPTION)
 #if IS_ENABLED(CONFIG_CRYPTO_DISKCIPHER)
 	if (inode && inode->i_crypt_info)
-		return inode->i_crypt_info->ci_key.dtfm != NULL;
+		return S_ISREG(inode->i_mode) && inode->i_crypt_info->ci_key.dtfm != NULL;
 #endif
 #endif
 	return 0;
