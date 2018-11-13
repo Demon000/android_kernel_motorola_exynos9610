@@ -190,7 +190,7 @@ skip_crypt_block:
 				offset = 0;
 			}
 		} while (i != nr_pages && len != 0);
-		fscrypt_set_bio(inode, bio);
+		fscrypt_set_bio(inode, bio, 0);
 		crypto_diskcipher_debug(FS_ZEROPAGE, bio->bi_opf);
 		err = submit_bio_wait(bio);
 		if (err)
@@ -206,11 +206,11 @@ out:
 }
 EXPORT_SYMBOL(fscrypt_zeroout_range);
 
-void fscrypt_set_bio(const struct inode *inode, struct bio *bio)
+void fscrypt_set_bio(const struct inode *inode, struct bio *bio, u64 dun)
 {
 #ifdef CONFIG_CRYPTO_DISKCIPHER
 	if (fscrypt_disk_encrypted(inode))
-		crypto_diskcipher_set(bio, inode->i_crypt_info->ci_key.dtfm);
+		crypto_diskcipher_set(bio, inode->i_crypt_info->ci_key.dtfm, inode, dun);
 #else
 	return;
 #endif

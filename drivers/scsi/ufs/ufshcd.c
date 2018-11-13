@@ -2132,6 +2132,7 @@ static int ufshcd_map_sg(struct ufs_hba *hba, struct ufshcd_lrb *lrbp)
 	int sg_segments;
 	int i, ret;
 	int sector_offset = 0;
+	int page_index = 0;
 
 	cmd = lrbp->cmd;
 	sg_segments = scsi_dma_map(cmd);
@@ -2159,7 +2160,7 @@ static int ufshcd_map_sg(struct ufs_hba *hba, struct ufshcd_lrb *lrbp)
 			prd->reserved = 0;
 			hba->transferred_sector += prd->size;
 
-			ret = ufshcd_vops_crypto_engine_cfg(hba, lrbp, sg, i, sector_offset);
+			ret = ufshcd_vops_crypto_engine_cfg(hba, lrbp, sg, i, sector_offset, page_index++);
 			if (ret) {
 				dev_err(hba->dev,
 					"%s: failed to configure crypto engine (%d)\n",
