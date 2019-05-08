@@ -47,6 +47,12 @@ struct fscrypt_mode fscrypt_modes[] = {
 		.ivsize = 32,
 		.blk_crypto_mode = BLK_ENCRYPTION_MODE_ADIANTUM,
 	},
+	[FSCRYPT_MODE_PRIVATE] = {
+		.friendly_name = "PRIVATE",
+		.cipher_str = "xts(aes)-disk",
+		.keysize = 64,
+		.ivsize = 16,
+	},
 };
 
 static DEFINE_MUTEX(fscrypt_mode_key_setup_mutex);
@@ -149,8 +155,11 @@ int fscrypt_prepare_key(struct fscrypt_prepared_key *prep_key,
 			const u8 *raw_key, unsigned int raw_key_size,
 			bool is_hw_wrapped, const struct fscrypt_info *ci)
 {
+
 	struct crypto_diskcipher *dtfm;
 	struct crypto_skcipher *tfm;
+	bool force = fscrypt_policy_contents_mode(&ci->ci_policy) ==
+		     FSCRYPT_MODE_PRIVATE;
 
 	if (fscrypt_using_inline_encryption(ci))
 		return fscrypt_prepare_inline_crypt_key(prep_key,
@@ -168,6 +177,9 @@ int fscrypt_prepare_key(struct fscrypt_prepared_key *prep_key,
 	return 0;
 
 try_skcipher:
+	if (force)
+		return ret;
+
 	tfm = fscrypt_allocate_skcipher(ci->ci_mode, raw_key, ci->ci_inode);
 	if (IS_ERR(tfm))
 		return PTR_ERR(tfm);
