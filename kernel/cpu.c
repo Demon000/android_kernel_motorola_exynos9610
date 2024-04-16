@@ -798,11 +798,8 @@ static int cpuhp_fast_kick_ap_work_pre(unsigned int cpu)
 	struct cpuhp_cpu_state *st = per_cpu_ptr(&cpuhp_state, cpu);
 	enum cpuhp_state prev_state = st->state;
 
-	cpuhp_lock_acquire(false);
-	cpuhp_lock_release(false);
-
-	cpuhp_lock_acquire(true);
-	cpuhp_lock_release(true);
+	lock_map_acquire(&cpuhp_state_lock_map);
+	lock_map_release(&cpuhp_state_lock_map);
 
 	trace_cpuhp_enter(cpu, st->target, prev_state,
 				cpuhp_fast_kick_ap_work_pre);
