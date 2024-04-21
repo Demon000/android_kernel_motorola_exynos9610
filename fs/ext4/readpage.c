@@ -44,6 +44,7 @@
 #include <linux/backing-dev.h>
 #include <linux/pagevec.h>
 #include <linux/cleancache.h>
+#include <crypto/diskcipher.h>
 
 #include "ext4.h"
 #include <trace/events/android_fs.h>

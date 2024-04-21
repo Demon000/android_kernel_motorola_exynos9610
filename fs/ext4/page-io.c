@@ -25,6 +25,7 @@
 #include <linux/slab.h>
 #include <linux/mm.h>
 #include <linux/backing-dev.h>
+#include <crypto/diskcipher.h>
 
 #include "ext4_jbd2.h"
 #include "xattr.h"
@@ -518,7 +519,7 @@ int ext4_bio_write_page(struct ext4_io_submit *io,
 	do {
 		if (!buffer_async_write(bh))
 			continue;
-		if (data_page)
+		if (bounce_page)
 			io->io_flags |= EXT4_IO_ENCRYPTED;
 		ret = io_submit_add_bh(io, inode, page, bounce_page, bh);
 		if (ret) {

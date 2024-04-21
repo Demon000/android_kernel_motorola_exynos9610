@@ -213,6 +213,7 @@ int fscrypt_zeroout_range(const struct inode *inode, pgoff_t lblk,
 			  sector_t pblk, unsigned int len);
 void fscrypt_set_bio(const struct inode *inode, struct bio *bio, u64 dun);
 void *fscrypt_get_diskcipher(const struct inode *inode);
+int fscrypt_disk_encrypted(const struct inode *inode);
 
 /* hooks.c */
 int fscrypt_file_open(struct inode *inode, struct file *filp);
@@ -491,6 +492,11 @@ static inline void fscrypt_set_bio(const struct inode *inode, struct bio *bio, u
 static inline void *fscrypt_get_diskcipher(const struct inode *inode)
 {
 	return NULL;
+}
+
+static inline int fscrypt_disk_encrypted(const struct inode *inode)
+{
+	return 0;
 }
 
 /* hooks.c */

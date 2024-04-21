@@ -25,6 +25,7 @@
 #include <linux/bio.h>
 #include <linux/namei.h>
 #include "fscrypt_private.h"
+#include <crypto/diskcipher.h>
 
 void fscrypt_decrypt_bio(struct bio *bio)
 {
@@ -205,6 +206,11 @@ out:
 	return err;
 }
 EXPORT_SYMBOL(fscrypt_zeroout_range);
+
+int fscrypt_disk_encrypted(const struct inode *inode)
+{
+	return __fscrypt_disk_encrypted(inode);
+}
 
 void fscrypt_set_bio(const struct inode *inode, struct bio *bio, u64 dun)
 {

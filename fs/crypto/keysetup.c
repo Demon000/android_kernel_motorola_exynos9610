@@ -9,6 +9,7 @@
  */
 
 #include <crypto/skcipher.h>
+#include <crypto/diskcipher.h>
 #include <linux/key.h>
 
 #include "fscrypt_private.h"
@@ -126,13 +127,13 @@ fscrypt_allocate_diskcipher(struct fscrypt_mode *mode, const u8 *raw_key,
 	int err;
 
 	if (!S_ISREG(inode->i_mode))
-		return NULL;
+		return ERR_PTR(-ENOENT);
 
-	dtfm = crypto_alloc_diskcipher(mode->cipher_str, 0, 0);
+	dtfm = crypto_alloc_diskcipher(mode->cipher_str, 0, 0, 1);
 	if (IS_ERR_OR_NULL(dtfm)) {
 		fscrypt_err(inode, "Error allocating '%s' transform: %ld",
 			    mode->cipher_str, PTR_ERR(dtfm));
-		return dtfm;
+		return dtfm ?: ERR_PTR(-ENOENT);
 	}
 
 	err = crypto_diskcipher_setkey(dtfm, raw_key, mode->keysize, 0);
@@ -143,6 +144,7 @@ fscrypt_allocate_diskcipher(struct fscrypt_mode *mode, const u8 *raw_key,
 
 err_free_dtfm:
 	crypto_free_diskcipher(dtfm);
+
 	return ERR_PTR(err);
 }
 
@@ -169,7 +171,7 @@ int fscrypt_prepare_key(struct fscrypt_prepared_key *prep_key,
 		return -EINVAL;
 
 	dtfm = fscrypt_allocate_diskcipher(ci->ci_mode, raw_key, ci->ci_inode);
-	if (IS_ERR_OR_NULL(dtfm))
+	if (IS_ERR(dtfm))
 		goto try_skcipher;
 
 	smp_store_release(&prep_key->dtfm, dtfm);
@@ -178,7 +180,7 @@ int fscrypt_prepare_key(struct fscrypt_prepared_key *prep_key,
 
 try_skcipher:
 	if (force)
-		return ret;
+		return PTR_ERR(dtfm);
 
 	tfm = fscrypt_allocate_skcipher(ci->ci_mode, raw_key, ci->ci_inode);
 	if (IS_ERR(tfm))

@@ -623,12 +623,12 @@ int fscrypt_policy_from_context(union fscrypt_policy *policy_u,
 				const union fscrypt_context *ctx_u,
 				int ctx_size);
 
-static inline bool fscrypt_disk_encrypted(const struct inode *inode)
+static inline int __fscrypt_disk_encrypted(const struct inode *inode)
 {
 #if IS_ENABLED(CONFIG_FS_ENCRYPTION)
 #if IS_ENABLED(CONFIG_CRYPTO_DISKCIPHER)
 	if (inode && inode->i_crypt_info)
-		return S_ISREG(inode->i_mode) && inode->i_crypt_info->ci_key.dtfm != NULL;
+		return S_ISREG(inode->i_mode) && (inode->i_crypt_info->ci_key.dtfm != NULL);
 #endif
 #endif
 	return 0;

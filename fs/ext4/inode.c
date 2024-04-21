@@ -4120,7 +4120,7 @@ static int __ext4_block_zero_page_range(handle_t *handle,
 
 	if (!buffer_uptodate(bh)) {
 		err = -EIO;
-		decrypt = fscrypt_inode_uses_fs_layer_crypto(inode)
+		decrypt = fscrypt_inode_uses_fs_layer_crypto(inode);
 		if (decrypt && fscrypt_has_encryption_key(inode))
 			bh->b_private = fscrypt_get_diskcipher(inode);
 		else

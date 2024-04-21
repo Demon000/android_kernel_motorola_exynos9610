@@ -19,6 +19,7 @@
 #include <linux/uio.h>
 #include <linux/cleancache.h>
 #include <linux/sched/signal.h>
+#include <crypto/diskcipher.h>
 
 #include "f2fs.h"
 #include "node.h"
@@ -1174,7 +1175,7 @@ static struct bio *f2fs_grab_read_bio(struct inode *inode, block_t blkaddr,
 		ctx->enabled_steps = post_read_steps;
 		bio->bi_private = ctx;
 		bio_set_op_attrs(bio, REQ_OP_READ,
-			(f2fs_encrypted_inode(inode) ?
+			(IS_ENCRYPTED(inode) ?
 			 REQ_NOENCRYPT :
 			 0));
 	}
@@ -2270,7 +2271,7 @@ submit_and_realloc:
 			goto out;
 		}
 		if (f2fs_may_encrypt_bio(inode, NULL))
-			fscrypt_set_bio(inode, io->bio, dun);
+			fscrypt_set_bio(inode, bio, dun);
 	}
 
 	/*
