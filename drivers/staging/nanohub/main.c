@@ -1019,19 +1019,6 @@ static int nanohub_release(struct inode *inode, struct file *file)
 	return 0;
 }
 
-static int nanohub_match_name(struct device *dev, const void *data)
-{
-	const char *name = data;
-
-	if(dev->kobj.name == NULL) {
-		nanohub_info("nanohub device name invalid\n");
-		return 0;
-	}
-
-	nanohub_info("nanohub device name = %s\n", dev->kobj.name);
-	return !strcmp(dev->kobj.name, name);
-}
-
 static int chub_dev_open(struct inode *inode, struct file *file)
 {
 	struct device *dev_nanohub;
