@@ -1009,9 +1009,12 @@ int exynos_gpu_cooling_init(void)
 {
 	struct device_node *np = NULL;
 	struct thermal_cooling_device *dev;
+#if 0
 	void *gen_block;
 	struct ect_gen_param_table *pwr_coeff;
-	u32 capacitance = 0, index;
+	u32 index;
+#endif
+	u32 capacitance = 0;
 	int ret = 0;
 
 	ret = gpu_cooling_table_init();
