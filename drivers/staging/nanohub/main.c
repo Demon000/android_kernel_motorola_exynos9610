@@ -823,7 +823,6 @@ static int nanohub_match_devt(struct device *dev, const void *data)
 */
 static int nanohub_open(struct inode *inode, struct file *file)
 {
-	dev_t devt = inode->i_rdev;
 	struct device *dev;
 	struct nanohub_io *io;
 
