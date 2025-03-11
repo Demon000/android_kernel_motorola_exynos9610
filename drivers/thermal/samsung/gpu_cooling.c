@@ -1054,8 +1054,8 @@ int exynos_gpu_cooling_init(void)
 	} else {
 		pr_err("%s: could not find ect-coeff-index\n", __func__);
 	}
-#endif
 regist:
+#endif
 	dev = __gpufreq_cooling_register(np, NULL, capacitance);
 
 	if (IS_ERR(dev)) {
