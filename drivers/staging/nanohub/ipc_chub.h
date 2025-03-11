@@ -12,13 +12,9 @@
 #ifndef _MAILBOX_CHUB_IPC_H
 #define _MAILBOX_CHUB_IPC_H
 
-#ifdef TARGET_SOC
-#define STR(x) #x
-#define TOSTRING(x) STR(x)
-#define EXPAND(x) x
-#define SOC_HEADER TOSTRING(EXPAND(TARGET_SOC)EXPAND(.h))
-#include SOC_HEADER
-#endif // TARGET_SOC
+#ifdef CONFIG_SOC_S5E3830
+#include "s5e3830.h"
+#endif // CONFIG_SOC_S5E3830
 
 #include "ipc_hw.h"
 #include "ipc_common.h"
